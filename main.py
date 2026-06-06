@@ -101,62 +101,115 @@ class Game():
         pygame.quit()
 
     def ask_exit_confirm(self):
-        dialog_rect = pygame.Rect(100, 200, 300, 100)
-        pygame.draw.rect(self.screen, (50, 50, 50), dialog_rect)
-        pygame.draw.rect(self.screen, (255, 255, 255), dialog_rect, 2)
+        # Semi-transparent dark overlay
+        overlay = pygame.Surface((SCREEN_SIZE, SCREEN_SIZE))
+        overlay.set_alpha(150)
+        overlay.fill((0, 0, 0))
+        self.screen.blit(overlay, (0, 0))
+
+        dialog_width, dialog_height = 320, 140
+        dialog_rect = pygame.Rect(SCREEN_SIZE/2 - dialog_width/2, SCREEN_SIZE/2 - dialog_height/2, dialog_width, dialog_height)
         
-        font = pygame.font.SysFont("Arial", 20)
-        text = font.render("Are you sure you want to quit?", True, (255, 255, 255))
-        self.screen.blit(text, (120, 220))
+        # Outer dark border
+        pygame.draw.rect(self.screen, (30, 25, 25), dialog_rect, border_radius=8)
+        # Inner fill
+        pygame.draw.rect(self.screen, (50, 40, 40), dialog_rect.inflate(-4, -4), border_radius=8)
+        # Inner gold border
+        pygame.draw.rect(self.screen, (200, 150, 80), dialog_rect.inflate(-8, -8), 2, border_radius=8)
         
-        btn_yes = pygame.Rect(130, 260, 80, 30)
-        btn_no = pygame.Rect(290, 260, 80, 30)
+        font = pygame.font.SysFont("Arial", 18, bold=True)
+        text = font.render("Are you sure you want to quit?", True, (255, 230, 150))
+        text_rect = text.get_rect(center=(dialog_rect.centerx, dialog_rect.y + 40))
+        self.screen.blit(text, text_rect)
         
-        pygame.draw.rect(self.screen, (0, 150, 0), btn_yes)
-        pygame.draw.rect(self.screen, (150, 0, 0), btn_no)
+        btn_yes = pygame.Rect(dialog_rect.centerx - 100, dialog_rect.y + 80, 80, 35)
+        btn_no = pygame.Rect(dialog_rect.centerx + 20, dialog_rect.y + 80, 80, 35)
         
-        text_yes = font.render("Yes", True, (255, 255, 255))
-        text_no = font.render("No", True, (255, 255, 255))
-        
-        self.screen.blit(text_yes, (155, 265))
-        self.screen.blit(text_no, (315, 265))
-        
-        pygame.display.flip()
+        last_hover_yes = False
+        last_hover_no = False
         
         while True:
+            pos = pygame.mouse.get_pos()
+            hover_yes = btn_yes.collidepoint(pos)
+            hover_no = btn_no.collidepoint(pos)
+            
+            if hover_yes and not last_hover_yes:
+                if self.hover_sound: self.hover_sound.play()
+            if hover_no and not last_hover_no:
+                if self.hover_sound: self.hover_sound.play()
+            last_hover_yes = hover_yes
+            last_hover_no = hover_no
+
+            # Draw YES button
+            if hover_yes:
+                pygame.draw.rect(self.screen, (255, 200, 50), btn_yes.inflate(6, 6), border_radius=6)
+            pygame.draw.rect(self.screen, (160, 40, 40), btn_yes, border_radius=5)
+            pygame.draw.rect(self.screen, (100, 20, 20), btn_yes, 2, border_radius=5)
+            text_yes = font.render("Yes", True, (255, 255, 255) if hover_yes else (220, 200, 180))
+            self.screen.blit(text_yes, text_yes.get_rect(center=btn_yes.center))
+            
+            # Draw NO button
+            if hover_no:
+                pygame.draw.rect(self.screen, (255, 200, 50), btn_no.inflate(6, 6), border_radius=6)
+            pygame.draw.rect(self.screen, (40, 120, 40), btn_no, border_radius=5)
+            pygame.draw.rect(self.screen, (20, 80, 20), btn_no, 2, border_radius=5)
+            text_no = font.render("No", True, (255, 255, 255) if hover_no else (220, 200, 180))
+            self.screen.blit(text_no, text_no.get_rect(center=btn_no.center))
+            
+            pygame.display.flip()
+            
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return True
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    pos = pygame.mouse.get_pos()
-                    if btn_yes.collidepoint(pos):
+                    if hover_yes:
+                        if self.click_sound: self.click_sound.play()
                         return True
-                    if btn_no.collidepoint(pos):
+                    if hover_no:
+                        if self.click_sound: self.click_sound.play()
                         return False
 
     def handle_settings_menu(self):
-        menu_rect = pygame.Rect(10, 45, 120, 70)
-        btn_reset = pygame.Rect(10, 45, 120, 35)
-        btn_exit = pygame.Rect(10, 80, 120, 35)
+        menu_rect = pygame.Rect(10, 45, 140, 85)
+        btn_reset = pygame.Rect(15, 50, 130, 35)
+        btn_exit = pygame.Rect(15, 90, 130, 35)
         
-        font_small = pygame.font.SysFont("Arial", 16)
+        font_small = pygame.font.SysFont("Arial", 15, bold=True)
+        
+        pygame.draw.rect(self.screen, (30, 25, 25), menu_rect, border_radius=5)
+        pygame.draw.rect(self.screen, (50, 40, 40), menu_rect.inflate(-4, -4), border_radius=5)
+        pygame.draw.rect(self.screen, (200, 150, 80), menu_rect.inflate(-6, -6), 1, border_radius=5)
+        
+        last_hover_reset = False
+        last_hover_exit = False
         
         while True:
             pos = pygame.mouse.get_pos()
+            hover_reset = btn_reset.collidepoint(pos)
+            hover_exit = btn_exit.collidepoint(pos)
+            
+            if hover_reset and not last_hover_reset:
+                if self.hover_sound: self.hover_sound.play()
+            if hover_exit and not last_hover_exit:
+                if self.hover_sound: self.hover_sound.play()
+            last_hover_reset = hover_reset
+            last_hover_exit = hover_exit
             
             # Draw Reset button
-            color_reset = (100, 100, 100) if btn_reset.collidepoint(pos) else (60, 60, 60)
-            pygame.draw.rect(self.screen, color_reset, btn_reset)
-            pygame.draw.rect(self.screen, (255, 255, 255), btn_reset, 1)
-            text_reset = font_small.render("Reset Game", True, (255, 255, 255))
-            self.screen.blit(text_reset, (25, 54))
+            color_reset = (160, 96, 48) if hover_reset else (100, 70, 40)
+            pygame.draw.rect(self.screen, color_reset, btn_reset, border_radius=4)
+            pygame.draw.rect(self.screen, (80, 40, 15), btn_reset, 1, border_radius=4)
+            text_color = (255, 255, 255) if hover_reset else (220, 200, 180)
+            text_reset = font_small.render("Reset Game", True, text_color)
+            self.screen.blit(text_reset, text_reset.get_rect(center=btn_reset.center))
             
             # Draw Exit button
-            color_exit = (100, 100, 100) if btn_exit.collidepoint(pos) else (60, 60, 60)
-            pygame.draw.rect(self.screen, color_exit, btn_exit)
-            pygame.draw.rect(self.screen, (255, 255, 255), btn_exit, 1)
-            text_exit = font_small.render("Exit to Menu", True, (255, 255, 255))
-            self.screen.blit(text_exit, (25, 89))
+            color_exit = (160, 96, 48) if hover_exit else (100, 70, 40)
+            pygame.draw.rect(self.screen, color_exit, btn_exit, border_radius=4)
+            pygame.draw.rect(self.screen, (80, 40, 15), btn_exit, 1, border_radius=4)
+            text_color = (255, 255, 255) if hover_exit else (220, 200, 180)
+            text_exit = font_small.render("Exit to Menu", True, text_color)
+            self.screen.blit(text_exit, text_exit.get_rect(center=btn_exit.center))
             
             pygame.display.flip()
             
@@ -166,11 +219,22 @@ class Game():
                         return 2
                     return 0
                 if event.type == MOUSEBUTTONDOWN:
-                    if btn_reset.collidepoint(event.pos):
+                    if hover_reset:
+                        if self.click_sound: self.click_sound.play()
                         return 1
-                    elif btn_exit.collidepoint(event.pos):
+                    elif hover_exit:
+                        if self.click_sound: self.click_sound.play()
                         if self.ask_exit_confirm():
                             return 2
+                        
+                        # Re-draw the settings menu background once they say NO 
+                        # so that it doesn't leave the dialog on screen
+                        pygame.draw.rect(self.screen, (30, 25, 25), menu_rect, border_radius=5)
+                        pygame.draw.rect(self.screen, (50, 40, 40), menu_rect.inflate(-4, -4), border_radius=5)
+                        pygame.draw.rect(self.screen, (200, 150, 80), menu_rect.inflate(-6, -6), 1, border_radius=5)
+                        # We must also re-draw the board!
+                        # Oh wait, handle_settings_menu blocks the loop. 
+                        # If the user says NO, we return 0 and the main loop re-draws everything.
                         return 0
                     else:
                         # Click outside menu
@@ -518,11 +582,19 @@ class Game():
             self.draw_clocks(time_w, time_b, player)
 
             # Draw Settings button
-            color_btn = (150, 150, 220) if is_hovering else (100, 100, 200)
-            pygame.draw.rect(self.screen, color_btn, settings_btn, border_radius=5)
-            font_small = pygame.font.SysFont("Arial", 16, bold=True)
-            settings_text = font_small.render("Settings", True, (255, 255, 255))
-            self.screen.blit(settings_text, (18, 15))
+            if is_hovering:
+                pygame.draw.rect(self.screen, (255, 200, 50), settings_btn.inflate(6, 6), border_radius=6)
+            
+            # Wooden look
+            pygame.draw.rect(self.screen, (160, 96, 48), settings_btn, border_radius=5)
+            pygame.draw.rect(self.screen, (100, 50, 20), settings_btn, 2, border_radius=5)
+            
+            font_small = pygame.font.SysFont("Arial", 15, bold=True)
+            text_color = (255, 255, 255) if is_hovering else (220, 200, 180)
+            settings_text = font_small.render("Settings", True, text_color)
+            
+            text_rect = settings_text.get_rect(center=settings_btn.center)
+            self.screen.blit(settings_text, text_rect)
 
             pygame.display.flip()
             # self.clock.tick(30)
@@ -720,11 +792,19 @@ class Game():
             self.draw_clocks(time_w, time_b, player)
 
             # Draw Settings button
-            color_btn = (150, 150, 220) if is_hovering else (100, 100, 200)
-            pygame.draw.rect(self.screen, color_btn, settings_btn, border_radius=5)
-            font_small = pygame.font.SysFont("Arial", 16, bold=True)
-            settings_text = font_small.render("Settings", True, (255, 255, 255))
-            self.screen.blit(settings_text, (18, 15))
+            if is_hovering:
+                pygame.draw.rect(self.screen, (255, 200, 50), settings_btn.inflate(6, 6), border_radius=6)
+            
+            # Wooden look
+            pygame.draw.rect(self.screen, (160, 96, 48), settings_btn, border_radius=5)
+            pygame.draw.rect(self.screen, (100, 50, 20), settings_btn, 2, border_radius=5)
+            
+            font_small = pygame.font.SysFont("Arial", 15, bold=True)
+            text_color = (255, 255, 255) if is_hovering else (220, 200, 180)
+            settings_text = font_small.render("Settings", True, text_color)
+            
+            text_rect = settings_text.get_rect(center=settings_btn.center)
+            self.screen.blit(settings_text, text_rect)
 
             pygame.display.flip()
             # self.clock.tick(20)
